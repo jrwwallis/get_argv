@@ -40,8 +40,20 @@ stack_end:
 extern void *__init_array_start;
 static void *is_elf __attribute__((unused)) = &__init_array_start;
 
+static int is_stack_growth_down(int *caller_stack_var) {
+  int callee_stack_var = 0;
+  return (intptr_t)&callee_stack_var < (intptr_t)caller_stack_var;
+}
+
 int get_argv(const char *const **const argv, int *const argc) {
   int i;
+
+  /* Ensure Linux downwards stack growth */
+  int caller_stack_var = 0;
+  if (!is_stack_growth_down(&caller_stack_var)) {
+    errno = ENOEXEC;
+    return -1;
+  }
 
   const long sc_ret = sysconf(_SC_PAGESIZE);
   if (sc_ret < 1) {

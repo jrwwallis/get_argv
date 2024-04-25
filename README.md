@@ -8,3 +8,5 @@ This is addressed here in as general a manner as possible with the following ass
 2. Linux stack growth direction (downwards)
 
 The rest of the code should be largely conformant to Posix and Open specs.
+
+Care is taken to find the bounds of the stack and not to exceed those bounds in either direction.
