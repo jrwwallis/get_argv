@@ -35,7 +35,7 @@ stack_end:
 */
 
 /* get_argv() strongly depends on how ELF lays out the stack and is unlikely
- * to work in any other executable format.  This reference the ELF-specific
+ * to work in any other executable format.  This reference to the ELF-specific
  * init_array section should not compile if ELF is not being used */
 extern void *__init_array_start;
 static void *is_elf __attribute__((unused)) = &__init_array_start;
