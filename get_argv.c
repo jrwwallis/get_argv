@@ -55,10 +55,12 @@ int get_argv(const char *const **const argv, int *const argc) {
     return -1;
   }
 
+#define ALIGN_PTR(ptr, align_type) (typeof(ptr))((uintptr_t)(ptr) & ~(sizeof(align_type) -1));
+
   /* Derive upper and lower bounds for a safe range of stack to search through
    * for the environ pointer */
-  const void *stack_upper_bound = environ[0];
-  const void *stack_lower_bound = &stack_upper_bound;
+  const void *stack_upper_bound = ALIGN_PTR(environ[0], void *);
+  const void *stack_lower_bound = ALIGN_PTR(&stack_upper_bound, void *);
 
   /* Represent the bounded range of stack as an array of pointers */
   const void *const *const stack_ptr_arr = (void *)stack_lower_bound;
@@ -77,8 +79,15 @@ int get_argv(const char *const **const argv, int *const argc) {
   }
 
   /* argc and argv immediately precede the environ pointer */
+#if defined __x86_64__
   *argv = stack_ptr_arr[i - 1];
   *argc = (uintptr_t)stack_ptr_arr[i - 2];
+#elif defined __aarch64__
+  *argv = stack_ptr_arr[i - 7];
+  *argc = (uintptr_t)stack_ptr_arr[i - 6];
+#else
+#error Unknown architecture
+#endif
 
   return 0;
 }
