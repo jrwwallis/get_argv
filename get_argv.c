@@ -1,29 +1,32 @@
 #define _GNU_SOURCE
 #include "get_argv.h"
 
+#if defined(__APPLE__) && defined(__MACH__)
+#include <crt_externs.h>
+#endif /* __APPLE__ && __MACH__ */
 #include <errno.h>
 #include <stdint.h>
 #include <unistd.h>
-
+// clang-format off
 /*
 ** ELF Stack Layout **
 (Credit: https://www.win.tue.nl/~aeb/linux/hh/stack-layout.html)
 (Authoritative source: https://gitlab.com/x86-psABIs/x86-64-ABI)
 
 lower addresses:
-    function stack frames                          <- Lower search bound
+    function stack frames                          <- 2) Lower search bound in current stack
     ...
     local variables of main
     saved registers of main
     return address of main
-    argc                                           <- argc and argv immediately
-    argv (char ** pointer)                         <-   precede envp
-    envp (char ** pointer)                         <- Search for this pointer
+    argc                                           <- 5) argc immediately precedes argv
+    argv (char ** pointer)                         <- 4) argv immediately precedes envp
+    envp (char ** pointer)                         <- 3) Search for this pointer
     stack from startup code
     argc
     argv pointers (char * pointer array)
-    argv[] terminating NULL                        <- Upper search bound
-    environment pointers (char * pointer array)
+    argv[] terminating NULL
+    environment pointers (char * pointer array)    <- 1) Upper search bound
     envp[] terminating NULL
     ELF Auxiliary Table
     argv strings
@@ -32,13 +35,17 @@ lower addresses:
     NULL
 higher addresses:
 
-*/
+ */
+// clang-format on
 
 /* get_argv() strongly depends on how ELF lays out the stack and is unlikely
  * to work in any other executable format.  This reference to the ELF-specific
  * init_array section should not compile if ELF is not being used */
 extern void *__init_array_start;
 static void *is_elf __attribute__((unused)) = &__init_array_start;
+#if defined(__APPLE__) && defined(__MACH__)
+extern char **environ;
+#endif /* __APPLE__ && __MACH__ */
 
 static const int is_stack_growth_down(const int *const caller_stack_var) {
   const int callee_stack_var = 0;
@@ -46,6 +53,12 @@ static const int is_stack_growth_down(const int *const caller_stack_var) {
 }
 
 int get_argv(const char *const **const argv, int *const argc) {
+#if defined(__APPLE__) && defined(__MACH__)
+  *argv = *(const char *const **const)_NSGetArgv();
+  *argc = *_NSGetArgc();
+  return 0;
+#endif /* __APPLE__ && __MACH__ */
+
   int i;
 
   /* Ensure Linux downwards stack growth */
