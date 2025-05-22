@@ -10,3 +10,16 @@ This is addressed here in as general a manner as possible with the following ass
 The rest of the code should be largely conformant to Posix and Open specs.
 
 Care is taken to find the bounds of the stack and not to exceed those bounds in either direction.
+
+### Note also
+
+argv[0] can be obtained with the GNU extensions `program_invocation_name`/`program_invocation_short_name` 
+
+```
+#define _GNU_SOURCE         /* See feature_test_macros(7) */
+#include <errno.h>
+extern char *program_invocation_name;
+extern char *program_invocation_short_name;
+```
+
+https://linux.die.net/man/3/program_invocation_short_name
